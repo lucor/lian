@@ -1,6 +1,8 @@
 # golicense
 
-golicense list information about the licenses of a Go module or binary and its dependencies.
+golicense list information about the licenses of a Go binary or module and its dependencies.
+Additionally can check the detected licenses against an allowed list.
+Default is to look for a go.mod file into the current directory.
 
 Licenses are detected using the
 [google/licensecheck](https://github.com/google/licensecheck) package that scans
@@ -21,6 +23,7 @@ Note: requires Go >= 1.18
 Usage: golicense [OPTIONS] [PATH]
 
 Options:
+  -a, --allowed          list of allowed licenses separated by comma (i.e. MIT, BSD-3-Clause). Default to all
   -h, --help             show this help message
   -i, --include          include the licenses in the output
       --list-names       list the names of the license file can be detected and exit

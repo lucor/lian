@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"strings"
 )
 
 // Version can be used to set the version at link time
 var Version string
 
 type options struct {
+	allowed          string
 	include          bool
 	listLicenses     bool
 	listLicenseNames bool
@@ -23,9 +25,11 @@ func main() {
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr, `Usage: golicense [OPTIONS] [PATH]
 List information about the licenses of a Go module or binary and its dependencies.
+Additionally can check the detected licenses against an allowed list.
 Default is to look for a go.mod file into the current directory.
 
 Options:
+  -a, --allowed          list of allowed licenses separated by comma (i.e. MIT, BSD-3-Clause). Default to all
   -h, --help             show this help message
   -i, --include          include the licenses in the output
       --list-names       list the names of the license file can be detected and exit
@@ -38,6 +42,8 @@ Options:
 
 	var opts options
 
+	flag.StringVar(&opts.allowed, "a", "", "")
+	flag.StringVar(&opts.allowed, "allowed", "", "")
 	flag.BoolVar(&opts.include, "i", false, "")
 	flag.BoolVar(&opts.include, "include", false, "")
 	flag.StringVar(&opts.output, "o", "", "")
@@ -63,6 +69,16 @@ Options:
 	if opts.listLicenseNames {
 		listLicenseNames()
 		os.Exit(0)
+	}
+
+	var allowed []string
+	if opts.allowed != "" {
+		for _, v := range strings.Split(opts.allowed, ",") {
+			v := strings.TrimSpace(v)
+			if v != "" {
+				allowed = append(allowed, v)
+			}
+		}
 	}
 
 	path := "go.mod"
@@ -94,6 +110,12 @@ Options:
 
 	for _, l := range licenses {
 		fmt.Fprintf(w, "## %s (https://pkg.go.dev/%s?tab=licenses)\n", l.ModuleInfo, l.ModuleInfo)
+
+		if !isAllowedLicense(l, allowed) {
+			fmt.Fprintf(os.Stderr, "[✗] Detected not allowed license. Got %q, allowed %v\n", l.Type, allowed)
+			os.Exit(1)
+		}
+
 		if opts.verbose {
 			fmt.Fprintf(w, "Path: %s\n", l.Path)
 			fmt.Fprintf(w, "License: %s\n", l.Type)
@@ -104,6 +126,18 @@ Options:
 			fmt.Fprintln(w)
 		}
 	}
+}
+
+func isAllowedLicense(l license, allowed []string) bool {
+	if len(allowed) == 0 {
+		return true
+	}
+	for _, v := range allowed {
+		if v == l.Type {
+			return true
+		}
+	}
+	return false
 }
 
 func version() string {
