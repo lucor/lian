@@ -1,10 +1,11 @@
 # golicense
 
-golicense is a simple tool that attempts to collect all the licenses of the dependencies of a Go binary in order to be used in redistribution.
+golicense list information about the licenses of a Go module or binary and its dependencies.
 
-golicense needs to be used with binaries compiled locally since it looks for licenses into the default location of the module cache (`$GOPATH/pkg/mod`).
-
-golicense is not meant to be used for open source compliance
+Licenses are detected using the
+[google/licensecheck](https://github.com/google/licensecheck) package that scans
+source texts for known licenses into the [module
+cache](https://go.dev/ref/mod#module-cache).
 
 ## Installation
 
@@ -17,13 +18,14 @@ Note: requires Go >= 1.18
 ## Usage
 
 ```
-Usage: golicense [OPTIONS] GO_BINARY
-
-Collect all the licenses of the dependencies of a GO_BINARY built with module support.
+Usage: golicense [OPTIONS] [PATH]
 
 Options:
-  -h, --help		show this help message
-  -o, --output <file>	write to file instead of stdout
-  -v, --verbose		make the tool verbose
-  -V, --version		show the version number
+  -h, --help             show this help message
+  -i, --include          include the licenses in the output
+      --list-names       list the names of the license file can be detected and exit
+      --list-licenses    list the licenses can be detected and exit
+  -o, --output <file>    write to file instead of stdout
+  -v, --verbose          make the tool verbose
+  -V, --version          show the version number
 ```
