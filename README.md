@@ -17,6 +17,10 @@ $ go install github.com/lucor/golicense@latest
 
 Note: requires Go >= 1.18
 
+## Download
+
+Pre-built binaries can be downloaded from the [releases](https://github.com/lucor/golicense/releases) page
+
 ## Usage
 
 ```
