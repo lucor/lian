@@ -13,16 +13,16 @@ import (
 )
 
 type license struct {
+	// Content holds the license content
+	Content []byte
 	// Name holds the license file name (i.e. LICENSE.md)
 	Name string
-	// ModuleInfo holds the module info (module + version)
-	ModuleInfo string
 	// Path holds the license path on the local host (GOMODCACHE/ModuleInfo)
 	Path string
 	// Type holds the license type (i.e. MIT)
 	Type string
-	// Content holds the license content
-	Content []byte
+
+	module.Version
 }
 
 var licenseNames = []string{
@@ -75,11 +75,11 @@ func getLicenses(gomodcache string, info moduleInfo, patterns []string) ([]licen
 			coverage := licensecheck.Scan(data)
 			for _, match := range coverage.Match {
 				l := license{
-					Name:       licenseFile,
-					ModuleInfo: v.String(),
-					Path:       licenseFilePath,
-					Type:       match.ID,
-					Content:    data,
+					Content: data,
+					Name:    licenseFile,
+					Path:    licenseFilePath,
+					Type:    match.ID,
+					Version: v,
 				}
 				licenses = append(licenses, l)
 			}

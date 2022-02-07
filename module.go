@@ -8,6 +8,8 @@ import (
 
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
+	"golang.org/x/mod/semver"
+	"golang.org/x/sys/execabs"
 )
 
 type moduleInfo struct {
@@ -71,4 +73,20 @@ func getModuleInfo(path string) (moduleInfo, error) {
 		mi.Require = append(mi.Require, m)
 	}
 	return mi, nil
+}
+
+func downloadModules(mi moduleInfo) error {
+	args := []string{"mod", "download"}
+	if semver.IsValid(mi.Module.Version) {
+		args = append(args, mi.Module.String())
+	}
+	for _, m := range mi.Require {
+		args = append(args, m.String())
+	}
+	cmd := execabs.Command("go", args...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error downloading modules: %w - %s", err, out)
+	}
+	return nil
 }

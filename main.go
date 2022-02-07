@@ -13,7 +13,7 @@ var Version string
 
 type options struct {
 	allowed          string
-	include          bool
+	download         bool
 	listLicenses     bool
 	listLicenseNames bool
 	output           string
@@ -29,14 +29,14 @@ Additionally can check the detected licenses against an allowed list.
 Default is to look for a go.mod file into the current directory.
 
 Options:
-  -a, --allowed          list of allowed licenses separated by comma (i.e. MIT, BSD-3-Clause). Default to all
+  -a, --allowed          comma separated list of allowed licenses (i.e. MIT, BSD-3-Clause). Default to all
+  -d, --download         download dependencies to local cache
   -h, --help             show this help message
-  -i, --include          include the licenses in the output
       --list-names       list the names of the license file can be detected and exit
       --list-licenses    list the licenses can be detected and exit
   -o, --output <file>    write to file instead of stdout
-  -v, --verbose          make the tool verbose
-  -V, --version          show the version number
+  -v, --verbose          print additional info on stderr
+  	  --version          show the version number
 `)
 	}
 
@@ -44,13 +44,12 @@ Options:
 
 	flag.StringVar(&opts.allowed, "a", "", "")
 	flag.StringVar(&opts.allowed, "allowed", "", "")
-	flag.BoolVar(&opts.include, "i", false, "")
-	flag.BoolVar(&opts.include, "include", false, "")
+	flag.BoolVar(&opts.download, "d", false, "")
+	flag.BoolVar(&opts.download, "download", false, "")
 	flag.StringVar(&opts.output, "o", "", "")
 	flag.StringVar(&opts.output, "output", "", "")
 	flag.BoolVar(&opts.verbose, "v", false, "")
 	flag.BoolVar(&opts.verbose, "verbose", false, "")
-	flag.BoolVar(&opts.version, "V", false, "")
 	flag.BoolVar(&opts.version, "version", false, "")
 	flag.BoolVar(&opts.listLicenseNames, "list-names", false, "")
 	flag.BoolVar(&opts.listLicenses, "list-licenses", false, "")
@@ -91,6 +90,14 @@ Options:
 		os.Exit(1)
 	}
 
+	if opts.download {
+		err = downloadModules(mi)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+
 	licenses, err := getLicenses(getGoModCache(), mi, licenseNames)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -109,22 +116,22 @@ Options:
 	}
 
 	for _, l := range licenses {
-		fmt.Fprintf(w, "## %s (https://pkg.go.dev/%s?tab=licenses)\n", l.ModuleInfo, l.ModuleInfo)
+		fmt.Fprintf(w, "* %s - (https://%s)\n", l.Version.String(), l.Version.Path)
 
 		if !isAllowedLicense(l, allowed) {
-			fmt.Fprintf(os.Stderr, "[✗] Detected not allowed license. Got %q, allowed %v\n", l.Type, allowed)
+			fmt.Fprintf(os.Stderr, "[✗] Not allowed license for %q. Found %q, want %q\n", l.Version.Path, l.Type, allowed)
 			os.Exit(1)
 		}
 
 		if opts.verbose {
-			fmt.Fprintf(w, "Path: %s\n", l.Path)
-			fmt.Fprintf(w, "License: %s\n", l.Type)
+			fmt.Fprintf(os.Stderr, "Found: %s\n", l.Path)
+			fmt.Fprintf(os.Stderr, "License: %s\n", l.Type)
+			fmt.Fprintf(os.Stderr, "Source: https://%s\n", l.Version.Path)
+			fmt.Fprintf(os.Stderr, "Link: https://pkg.go.dev/%s?tab=licenses\n", l.Version.String())
 		}
 		fmt.Fprintln(w)
-		if opts.include {
-			fmt.Fprintf(w, "%s", l.Content)
-			fmt.Fprintln(w)
-		}
+		fmt.Fprintf(w, "%s", l.Content)
+		fmt.Fprintln(w)
 	}
 }
 
