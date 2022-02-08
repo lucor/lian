@@ -71,16 +71,6 @@ Options:
 		os.Exit(0)
 	}
 
-	var allowed []string
-	if opts.allowed != "" {
-		for _, v := range strings.Split(opts.allowed, ",") {
-			v := strings.TrimSpace(v)
-			if v != "" {
-				allowed = append(allowed, v)
-			}
-		}
-	}
-
 	path := "go.mod"
 	if len(flag.Args()) > 0 {
 		path = flag.Arg(0)
@@ -118,29 +108,71 @@ Options:
 		w = f
 	}
 
-	if !opts.dump {
-		fmt.Fprintf(w, "GOMODCACHE=%s\n", gomodcache)
-		w = tabwriter.NewWriter(w, 0, 0, 1, ' ', tabwriter.Debug)
-		fmt.Fprintln(w, "License\tPath\tLink on pkg.go.dev")
-		defer w.(*tabwriter.Writer).Flush()
+	if opts.dump {
+		dump(w, licenses)
+		os.Exit(0)
 	}
 
+	err = report(w, licenses, opts)
+	if err != nil {
+		os.Exit(1)
+	}
+}
+
+func dump(w io.Writer, licenses []license) {
+	// add the Go Programming Language license
+	fmt.Fprintln(w, golangLicense)
 	for _, l := range licenses {
-		if !isAllowedLicense(l, allowed) {
-			fmt.Fprintf(os.Stderr, "[✗] Not allowed license for %q. Found %q, want %q\n", l.Version.Path, l.Type, allowed)
-			os.Exit(1)
+		fmt.Fprintf(w, "* %s - (https://%s)\n", l.Version.String(), l.Version.Path)
+		fmt.Fprintln(w)
+		fmt.Fprintf(w, "%s", l.Content)
+		fmt.Fprintln(w)
+	}
+}
+
+func report(w io.Writer, licenses []license, opts options) error {
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', tabwriter.Debug)
+	defer tw.Flush()
+
+	// the table header
+	th := "License\tDependency\tFile\tpkg.go.dev URL"
+
+	var allowed []string
+	if opts.allowed != "" {
+		for _, v := range strings.Split(opts.allowed, ",") {
+			v := strings.TrimSpace(v)
+			if v != "" {
+				allowed = append(allowed, v)
+			}
 		}
-		if opts.dump {
-			fmt.Fprintf(w, "* %s - (https://%s)\n", l.Version.String(), l.Version.Path)
-			fmt.Fprintln(w)
-			fmt.Fprintf(w, "%s", l.Content)
-			fmt.Fprintln(w)
+	}
+	if len(allowed) > 0 {
+		th = "Allowed\t" + th
+	}
+
+	// print the table header
+	fmt.Fprintln(tw, th)
+
+	var err error
+	for _, l := range licenses {
+		row := fmt.Sprintf("%s\t%s\t%s\thttps://pkg.go.dev/%s?tab=licenses", l.Type, l.Version.String(), l.Name, l.Version.String())
+		if len(allowed) == 0 {
+			// no allowed rule, print the data and continue
+			fmt.Fprintln(tw, row)
 			continue
 		}
 
-		licensePath, _ := l.LicensePath()
-		fmt.Fprintf(w, "%s\t%s\thttps://pkg.go.dev/%s?tab=licenses\n", l.Type, licensePath, l.Version.String())
+		// check for allowed license and add result to the report row
+		isAllowedColumn := "Yes\t"
+		if !isAllowedLicense(l, allowed) {
+			err = fmt.Errorf("license not allowed: license %q - dependency %q", l.Type, l.Path)
+			isAllowedColumn = "No\t"
+		}
+		row = isAllowedColumn + row
+		fmt.Fprintln(tw, row)
 	}
+
+	return err
 }
 
 func isAllowedLicense(l license, allowed []string) bool {
