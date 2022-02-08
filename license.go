@@ -17,12 +17,30 @@ type license struct {
 	Content []byte
 	// Name holds the license file name (i.e. LICENSE.md)
 	Name string
-	// Path holds the license path on the local host (GOMODCACHE/ModuleInfo)
-	Path string
 	// Type holds the license type (i.e. MIT)
 	Type string
 
 	module.Version
+}
+
+func (l license) ModuleVersion() string {
+	return l.Version.Path + "@" + l.Version.Version
+}
+
+func (l license) ModulePath() (string, error) {
+	epath, err := module.EscapePath(l.Version.Path)
+	if err != nil {
+		return "", fmt.Errorf("invalid module path: %s", err)
+	}
+	return epath + "@" + l.Version.Version, nil
+}
+
+func (l license) LicensePath() (string, error) {
+	modpath, err := l.ModulePath()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(modpath, l.Name), nil
 }
 
 var licenseNames = []string{
@@ -49,14 +67,17 @@ func getGoModCache() string {
 func getLicenses(gomodcache string, info moduleInfo, patterns []string) ([]license, error) {
 	licenses := []license{}
 	for _, v := range info.Require {
-		epath, err := module.EscapePath(v.Path)
-		if err != nil {
-			return nil, fmt.Errorf("invalid module path: %s", err)
+
+		l := license{
+			Version: v,
 		}
 
-		modpath := filepath.Join(gomodcache, epath+"@"+v.Version)
+		modpath, err := l.ModulePath()
+		if err != nil {
+			return nil, err
+		}
 
-		licenseFiles, err := findLicenses(modpath, patterns)
+		licenseFiles, err := findLicenses(filepath.Join(gomodcache, modpath), patterns)
 		if err != nil {
 			return nil, fmt.Errorf("could not scan for licenses: %w", err)
 		}
@@ -65,22 +86,23 @@ func getLicenses(gomodcache string, info moduleInfo, patterns []string) ([]licen
 			return nil, fmt.Errorf("license not found for %s in %s", v.String(), modpath)
 		}
 
-		for _, licenseFile := range licenseFiles {
-			licenseFilePath := filepath.Join(modpath, licenseFile)
-			data, err := os.ReadFile(licenseFilePath)
+		for _, name := range licenseFiles {
+			l := l
+			l.Name = name
+			licensePath, err := l.LicensePath()
+			if err != nil {
+				return nil, err
+			}
+
+			data, err := os.ReadFile(filepath.Join(gomodcache, licensePath))
 			if err != nil {
 				return nil, fmt.Errorf("error reading license file: %w", err)
 			}
 
 			coverage := licensecheck.Scan(data)
 			for _, match := range coverage.Match {
-				l := license{
-					Content: data,
-					Name:    licenseFile,
-					Path:    licenseFilePath,
-					Type:    match.ID,
-					Version: v,
-				}
+				l.Content = data
+				l.Type = match.ID
 				licenses = append(licenses, l)
 			}
 		}

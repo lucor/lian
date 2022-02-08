@@ -3,9 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"runtime/debug"
 	"strings"
+	"text/tabwriter"
 )
 
 // Version can be used to set the version at link time
@@ -14,10 +16,10 @@ var Version string
 type options struct {
 	allowed          string
 	download         bool
+	dump             bool
 	listLicenses     bool
 	listLicenseNames bool
 	output           string
-	verbose          bool
 	version          bool
 }
 
@@ -31,11 +33,11 @@ Default is to look for a go.mod file into the current directory.
 Options:
   -a, --allowed          comma separated list of allowed licenses (i.e. MIT, BSD-3-Clause). Default to all
   -d, --download         download dependencies to local cache
+      --dump             dump all licenses
   -h, --help             show this help message
       --list-names       list the names of the license file can be detected and exit
       --list-licenses    list the licenses can be detected and exit
   -o, --output <file>    write to file instead of stdout
-  -v, --verbose          print additional info on stderr
   	  --version          show the version number
 `)
 	}
@@ -46,10 +48,9 @@ Options:
 	flag.StringVar(&opts.allowed, "allowed", "", "")
 	flag.BoolVar(&opts.download, "d", false, "")
 	flag.BoolVar(&opts.download, "download", false, "")
+	flag.BoolVar(&opts.dump, "dump", false, "")
 	flag.StringVar(&opts.output, "o", "", "")
 	flag.StringVar(&opts.output, "output", "", "")
-	flag.BoolVar(&opts.verbose, "v", false, "")
-	flag.BoolVar(&opts.verbose, "verbose", false, "")
 	flag.BoolVar(&opts.version, "version", false, "")
 	flag.BoolVar(&opts.listLicenseNames, "list-names", false, "")
 	flag.BoolVar(&opts.listLicenses, "list-licenses", false, "")
@@ -98,13 +99,15 @@ Options:
 		}
 	}
 
-	licenses, err := getLicenses(getGoModCache(), mi, licenseNames)
+	gomodcache := getGoModCache()
+	licenses, err := getLicenses(gomodcache, mi, licenseNames)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	w := os.Stdout
+	var w io.Writer
+	w = os.Stdout
 	if opts.output != "" {
 		f, err := os.Create(opts.output)
 		if err != nil {
@@ -115,23 +118,28 @@ Options:
 		w = f
 	}
 
-	for _, l := range licenses {
-		fmt.Fprintf(w, "* %s - (https://%s)\n", l.Version.String(), l.Version.Path)
+	if !opts.dump {
+		fmt.Fprintf(w, "GOMODCACHE=%s\n", gomodcache)
+		w = tabwriter.NewWriter(w, 0, 0, 1, ' ', tabwriter.Debug)
+		fmt.Fprintln(w, "License\tPath\tLink on pkg.go.dev")
+		defer w.(*tabwriter.Writer).Flush()
+	}
 
+	for _, l := range licenses {
 		if !isAllowedLicense(l, allowed) {
 			fmt.Fprintf(os.Stderr, "[✗] Not allowed license for %q. Found %q, want %q\n", l.Version.Path, l.Type, allowed)
 			os.Exit(1)
 		}
-
-		if opts.verbose {
-			fmt.Fprintf(os.Stderr, "Found: %s\n", l.Path)
-			fmt.Fprintf(os.Stderr, "License: %s\n", l.Type)
-			fmt.Fprintf(os.Stderr, "Source: https://%s\n", l.Version.Path)
-			fmt.Fprintf(os.Stderr, "Link: https://pkg.go.dev/%s?tab=licenses\n", l.Version.String())
+		if opts.dump {
+			fmt.Fprintf(w, "* %s - (https://%s)\n", l.Version.String(), l.Version.Path)
+			fmt.Fprintln(w)
+			fmt.Fprintf(w, "%s", l.Content)
+			fmt.Fprintln(w)
+			continue
 		}
-		fmt.Fprintln(w)
-		fmt.Fprintf(w, "%s", l.Content)
-		fmt.Fprintln(w)
+
+		licensePath, _ := l.LicensePath()
+		fmt.Fprintf(w, "%s\t%s\thttps://pkg.go.dev/%s?tab=licenses\n", l.Type, licensePath, l.Version.String())
 	}
 }
 
