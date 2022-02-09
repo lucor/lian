@@ -67,3 +67,34 @@ golicense --allowed "MIT,BSD-3-CLAUSE" /path/to/go.mod
 ```
 golicense --dump -o LICENSE-THIRD-PARTY /path/to/go_binary
 ```
+
+### License check as GitHub action
+
+```yml
+name: License check
+on: [push, pull_request]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2
+      with:
+        stable: 'false'
+        go-version: '1.18.0-beta2'
+
+    - name: install golicense
+      run: go install github.com/lucor/golicense@latest
+
+    - name: license check against go.mod
+      run: golicense -d --allowed="BSD-2-Clause, BSD-3-Clause, MIT"
+
+    - name: build
+      run: go build
+
+    - name: License check against the Go binary
+      run: golicense --allowed="BSD-2-Clause, BSD-3-Clause, MIT" ./golicense
+```
+
+See in [action](https://github.com/lucor/golicense/actions/workflows/license_check.yml) against this repo.
