@@ -24,7 +24,7 @@ jobs:
           function build_package_lian() {
             DIR="$(mktemp -d)"
             mkdir "$DIR/lian"
-            cp "LICENSE" "$DIR/lian"
+            cp "LICENSE" "LICENSE-THIRD-PARTY" "$DIR/lian"
             go build -o "$DIR/lian" -ldflags "-w -s -X main.Version=$VERSION" -trimpath .
             if [ "$GOOS" == "windows" ]; then
                ( cd "$DIR"; zip lian.zip -r lian )
