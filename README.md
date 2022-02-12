@@ -1,20 +1,19 @@
-# golicense
+# lian
 
-golicense reports information about the licenses of a Go module or binary and its dependencies.
-## Use cases
+lian is a license analyzer for Go binaries and modules. 
 
-golicense aims to help in the following use cases:
+It aims to help in the following use cases:
 
-- report all the dependencies, their versions, and license type along with the URL on pkg.go.dev
-- dump all licenses to comply with package distribution
+- report all the dependencies, their versions, and licenses type along with the URL on pkg.go.dev
+- dump and combine all licenses to comply with package distribution
 - check against a set of allowed licenses
 
 ## Example
 
-`golicense` in action with itself
+`lian` in action with itself
 
 <div align="center">
-    <img alt="golicense example" src="example.gif" />
+    <img alt="lian example" src="example.gif" />
 </div>
 
 ## How it works
@@ -26,24 +25,24 @@ The licenses are detected using the
 source texts for known licenses directly from the [module cache](https://go.dev/ref/mod#module-cache).
 
 The module cache usually is already warmed if the module has been already built locally.
-If the dependencies are not present the `-d, --download` option can be specified and golicense will automatically download the dependencies using the `go mod download` command.
+If the dependencies are not present the `-d, --download` option can be specified and it will automatically download the dependencies using the `go mod download` command.
 
 ## Installation
 
 ```
-$ go install github.com/lucor/golicense@latest
+$ go install lucor.dev/lian@latest
 ```
 
 Note: requires Go >= 1.18
 
 ## Download
 
-Pre-built binaries can be downloaded from the [releases](https://github.com/lucor/golicense/releases) page
+Pre-built binaries can be downloaded from the [releases](https://lucor.dev/lian/releases) page
 
 ## Usage
 
 ```
-Usage: golicense [OPTIONS] [PATH]
+Usage: lian [OPTIONS] [PATH]
 
 Options:
   -a, --allowed          comma separated list of allowed licenses (i.e. MIT, BSD-3-Clause). Default to all
@@ -59,13 +58,13 @@ Options:
 ### License check for a Go module
 
 ```
-golicense --allowed "MIT,BSD-3-CLAUSE" /path/to/go.mod
+lian --allowed "MIT,BSD-3-CLAUSE" /path/to/go.mod
 ```
 
 ### Dump all licenses to a file for a Go binary
 
 ```
-golicense --dump -o LICENSE-THIRD-PARTY /path/to/go_binary
+lian --dump -o LICENSE-THIRD-PARTY /path/to/go_binary
 ```
 
 ### License check as GitHub action
@@ -84,17 +83,17 @@ jobs:
         stable: 'false'
         go-version: '1.18.0-beta2'
 
-    - name: install golicense
-      run: go install github.com/lucor/golicense@latest
+    - name: install lian
+      run: go install lucor.dev/lian@latest
 
     - name: license check against go.mod
-      run: golicense -d --allowed="BSD-2-Clause, BSD-3-Clause, MIT"
+      run: lian -d --allowed="BSD-2-Clause, BSD-3-Clause, MIT"
 
     - name: build
       run: go build
 
     - name: License check against the Go binary
-      run: golicense --allowed="BSD-2-Clause, BSD-3-Clause, MIT" ./golicense
+      run: lian --allowed="BSD-2-Clause, BSD-3-Clause, MIT" ./lian
 ```
 
-See in [action](https://github.com/lucor/golicense/actions/workflows/license_check.yml) against this repo.
+See in [action](https://github.com/lucor/lian/actions/workflows/license_check.yml) against this repo.

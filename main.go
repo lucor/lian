@@ -25,10 +25,9 @@ type options struct {
 
 func main() {
 	flag.Usage = func() {
-		fmt.Fprint(os.Stderr, `Usage: golicense [OPTIONS] [PATH]
-List information about the licenses of a Go module or binary and its dependencies.
-Additionally can check the detected licenses against an allowed list.
-Default is to look for a go.mod file into the current directory.
+		fmt.Fprint(os.Stderr, `Usage: lian [OPTIONS] [PATH]
+lian is a license analyzer for Go binaries and modules. 
+Default is to search for a go.mod file into the current directory.
 
 Options:
   -a, --allowed          comma separated list of allowed licenses (i.e. MIT, BSD-3-Clause). Default to all
@@ -57,7 +56,7 @@ Options:
 	flag.Parse()
 
 	if opts.version {
-		fmt.Println("golicense", version())
+		fmt.Println("lian", version())
 		os.Exit(0)
 	}
 

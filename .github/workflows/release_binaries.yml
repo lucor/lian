@@ -1,0 +1,86 @@
+name: Release binaries
+on:
+  release:
+    types: [published]
+permissions:
+  contents: read
+jobs:
+  build:
+    name: Build release binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          stable: 'false'
+          go-version: '1.18.0-beta2'
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Build and package binaries
+        run: |
+          VERSION="$(git describe --tags)"
+          function build_package_lian() {
+            DIR="$(mktemp -d)"
+            mkdir "$DIR/lian"
+            cp "LICENSE" "$DIR/lian"
+            go build -o "$DIR/lian" -ldflags "-w -s -X main.Version=$VERSION" -trimpath .
+            if [ "$GOOS" == "windows" ]; then
+               ( cd "$DIR"; zip lian.zip -r lian )
+              mv "$DIR/lian.zip" "lian-$VERSION-$GOOS-$GOARCH.zip"
+              sha256sum "lian-$VERSION-$GOOS-$GOARCH.zip" > "lian-$VERSION-$GOOS-$GOARCH.zip.sha256"
+            else
+              tar -cvzf "lian-$VERSION-$GOOS-$GOARCH.tar.gz" -C "$DIR" lian
+              sha256sum "lian-$VERSION-$GOOS-$GOARCH.tar.gz" > "lian-$VERSION-$GOOS-$GOARCH.tar.gz.sha256"
+            fi
+          }
+          export CGO_ENABLED=0
+          GOOS=darwin GOARCH=amd64 build_package_lian
+          GOOS=darwin GOARCH=arm64 build_package_lian
+          GOOS=freebsd GOARCH=amd64 build_package_lian
+          GOOS=linux GOARCH=amd64 build_package_lian
+          GOOS=linux GOARCH=arm64 build_package_lian
+          GOOS=windows GOARCH=amd64 build_package_lian
+          sha256sum -c --strict *.sha256
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: lian-binaries
+          path: lian-*
+  upload:
+    name: Upload release binaries
+    if: ${{ github.event_name == 'release' }}
+    needs: build
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download workflow artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: lian-binaries
+      - name: Upload release artifacts
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require("fs").promises;
+            const { repo: { owner, repo }, sha } = context;
+
+            const release = await github.repos.getReleaseByTag({
+              owner, repo,
+              tag: process.env.GITHUB_REF.replace("refs/tags/", ""),
+            });
+            console.log("Release:", { release });
+
+            for (let file of await fs.readdir(".")) {
+              if (!file.startsWith("lian-")) continue;
+              console.log("Uploading", file);
+              await github.repos.uploadReleaseAsset({
+                owner, repo,
+                release_id: release.data.id,
+                name: file,
+                data: await fs.readFile(file),
+              });            
+            }

@@ -1,4 +1,4 @@
-golicense make use of third party projects, either by reusing their code, or by
+lian make use of third party projects, either by reusing their code, or by
 statically linking them into resulting binaries. These projects are:
 
 * The Go Programming Language - https://golang.org/

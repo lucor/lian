@@ -1,4 +1,10 @@
-# Changelog - golicense
+# Changelog - lian
+
+## 0.3.0 - 12 February 2022
+
+- add license check github action
+- add release binary github action
+- rename to lian to avoid name conflict with other packages
 
 ## 0.2.0 - 08 February 2022
 
