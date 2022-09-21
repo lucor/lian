@@ -152,7 +152,7 @@ func report(w io.Writer, licenses []license, opts options) error {
 	// print the table header
 	fmt.Fprintln(tw, th)
 
-	var err error
+	merr := map[string]error{}
 	for _, l := range licenses {
 		row := fmt.Sprintf("%s\t%s\t%s\thttps://pkg.go.dev/%s?tab=licenses", l.Type, l.Version.String(), l.Name, l.Version.String())
 		if len(allowed) == 0 {
@@ -163,15 +163,26 @@ func report(w io.Writer, licenses []license, opts options) error {
 
 		// check for allowed license and add result to the report row
 		isAllowedColumn := "Yes\t"
-		if !isAllowedLicense(l, allowed) {
-			err = fmt.Errorf("license not allowed: license %q - dependency %q", l.Type, l.Path)
+		if isAllowedLicense(l, allowed) {
+			// need to keep track of valid license in case of dual license
+			merr[l.Path] = nil
+		} else {
+			// dual license check
+			if _, ok := merr[l.Path]; !ok {
+				merr[l.Path] = fmt.Errorf("license not allowed: license %q - dependency %q", l.Type, l.Path)
+			}
 			isAllowedColumn = "No\t"
 		}
 		row = isAllowedColumn + row
 		fmt.Fprintln(tw, row)
 	}
 
-	return err
+	for _, err := range merr {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func isAllowedLicense(l license, allowed []string) bool {

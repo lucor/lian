@@ -1,5 +1,13 @@
 # Changelog - lian
 
+## 0.3.2 - 21 September 2022
+
+- fix dual license check
+
+## 0.3.1 - 12 February 2022
+
+- action:  missed LICENSE-THIRD-PARTY in release binaries
+
 ## 0.3.0 - 12 February 2022
 
 - add license check github action
