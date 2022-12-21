@@ -64,7 +64,7 @@ func getGoModCache() string {
 	return filepath.Join(gopath, "pkg", "mod")
 }
 
-func getLicenses(gomodcache string, info moduleInfo, patterns []string) ([]license, error) {
+func getLicenses(gomodcache string, info moduleInfo, patterns []string, excluded map[string]struct{}) ([]license, error) {
 	licenses := []license{}
 	for _, v := range info.Require {
 
@@ -75,6 +75,10 @@ func getLicenses(gomodcache string, info moduleInfo, patterns []string) ([]licen
 		modpath, err := l.ModulePath()
 		if err != nil {
 			return nil, err
+		}
+
+		if _, ok := excluded[modpath]; ok {
+			continue
 		}
 
 		licenseFiles, err := findLicenses(filepath.Join(gomodcache, modpath), patterns)
