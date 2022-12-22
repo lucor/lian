@@ -21,6 +21,7 @@ type options struct {
 	listLicenseNames bool
 	output           string
 	version          bool
+	excluded         string
 }
 
 func main() {
@@ -31,6 +32,7 @@ Default is to search for a go.mod file into the current directory.
 
 Options:
   -a, --allowed          comma separated list of allowed licenses (i.e. MIT, BSD-3-Clause). Default to all
+  -e, --excluded         comma separated list of repository with version excluded from the licenses check. Default to none
   -d, --download         download dependencies to local cache
       --dump             dump all licenses
   -h, --help             show this help message
@@ -53,6 +55,8 @@ Options:
 	flag.BoolVar(&opts.version, "version", false, "")
 	flag.BoolVar(&opts.listLicenseNames, "list-names", false, "")
 	flag.BoolVar(&opts.listLicenses, "list-licenses", false, "")
+	flag.StringVar(&opts.excluded, "e", "", "")
+	flag.StringVar(&opts.excluded, "excluded", "", "")
 	flag.Parse()
 
 	if opts.version {
@@ -88,8 +92,15 @@ Options:
 		}
 	}
 
+	excluded := splitCommaSeparatedFlag(opts.excluded)
+
+	excludedExist := map[string]struct{}{}
+	for _, e := range excluded {
+		excludedExist[e] = struct{}{}
+	}
+
 	gomodcache := getGoModCache()
-	licenses, err := getLicenses(gomodcache, mi, licenseNames)
+	licenses, err := getLicenses(gomodcache, mi, licenseNames, excludedExist)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -136,15 +147,7 @@ func report(w io.Writer, licenses []license, opts options) error {
 	// the table header
 	th := "License\tDependency\tFile\tpkg.go.dev URL"
 
-	var allowed []string
-	if opts.allowed != "" {
-		for _, v := range strings.Split(opts.allowed, ",") {
-			v := strings.TrimSpace(v)
-			if v != "" {
-				allowed = append(allowed, v)
-			}
-		}
-	}
+	allowed := splitCommaSeparatedFlag(opts.allowed)
 	if len(allowed) > 0 {
 		th = "Allowed\t" + th
 	}
@@ -205,4 +208,19 @@ func version() string {
 		return info.Main.Version
 	}
 	return "(unknown)"
+}
+
+func splitCommaSeparatedFlag(s string) []string {
+	if s == "" {
+		return []string{}
+	}
+
+	var r []string
+	for _, v := range strings.Split(s, ",") {
+		v := strings.TrimSpace(v)
+		if v != "" {
+			r = append(r, v)
+		}
+	}
+	return r
 }
