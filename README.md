@@ -46,6 +46,7 @@ Usage: lian [OPTIONS] [PATH]
 
 Options:
   -a, --allowed          comma separated list of allowed licenses (i.e. MIT, BSD-3-Clause). Default to all
+  -e, --excluded         comma separated list of repository with version excluded from the licenses check. Default to none
   -d, --download         download dependencies to local cache
       --dump             dump all licenses
   -h, --help             show this help message
