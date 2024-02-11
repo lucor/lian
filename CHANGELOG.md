@@ -1,5 +1,9 @@
 # Changelog - lian
 
+## 0.4.1 - Unreleased
+
+- fix duplicated `COPYING.MD` should be `COPYING.TXT`
+
 ## 0.4.0 - 22 December 2022
 
 - added the `excluded` option (`--excluded`) to exclude specific version of a repository from from the licenses check #1 

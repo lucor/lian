@@ -46,7 +46,7 @@ func (l license) LicensePath() (string, error) {
 var licenseNames = []string{
 	"COPYING",
 	"COPYING.MD",
-	"COPYING.MD",
+	"COPYING.TXT",
 	"LICENSE",
 	"LICENSE.MD",
 	"LICENSE.TXT",
