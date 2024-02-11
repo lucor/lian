@@ -1,6 +1,6 @@
 # Changelog - lian
 
-## 0.4.1 - Unreleased
+## 0.4.1 - 11 February 2024
 
 - fix duplicated `COPYING.MD` should be `COPYING.TXT`
 
