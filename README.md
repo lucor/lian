@@ -1,6 +1,6 @@
 # lian
 
-lian is a license analyzer for Go binaries and modules. 
+lian is a license analyzer for Go binaries and modules.
 
 It aims to help in the following use cases:
 
@@ -29,8 +29,8 @@ If the dependencies are not present the `-d, --download` option can be specified
 
 ## Installation
 
-```
-$ go install lucor.dev/lian@latest
+```sh
+go install lucor.dev/lian@latest
 ```
 
 Note: requires Go >= 1.18
@@ -41,7 +41,7 @@ Pre-built binaries can be downloaded from the [releases](https://lucor.dev/lian/
 
 ## Usage
 
-```
+```sh
 Usage: lian [OPTIONS] [PATH]
 
 Options:
@@ -53,18 +53,18 @@ Options:
       --list-names       list the names of the license file can be detected and exit
       --list-licenses    list the licenses can be detected and exit
   -o, --output <file>    write to file instead of stdout
-  	  --version          show the version number
+     --version          show the version number
 ```
 
 ### License check for a Go module
 
-```
+```sh
 lian --allowed "MIT,BSD-3-CLAUSE" /path/to/go.mod
 ```
 
 ### Dump all licenses to a file for a Go binary
 
-```
+```sh
 lian --dump -o LICENSE-THIRD-PARTY /path/to/go_binary
 ```
 
@@ -78,11 +78,10 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-go@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
       with:
-        stable: 'false'
-        go-version: '1.18.0-beta2'
+        go-version: 'stable'
 
     - name: install lian
       run: go install lucor.dev/lian@latest
