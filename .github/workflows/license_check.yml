@@ -5,11 +5,10 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-go@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
       with:
-        stable: 'false'
-        go-version: '1.18.0-beta2'
+        go-version: 'stable'
 
     - name: install lian
       run: go install lucor.dev/lian@latest
