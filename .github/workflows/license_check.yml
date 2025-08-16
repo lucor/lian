@@ -14,10 +14,10 @@ jobs:
       run: go install lucor.dev/lian@latest
 
     - name: license check against go.mod
-      run: lian -d --allowed="BSD-2-Clause, BSD-3-Clause, MIT"
+      run: lian -d --allowed="BSD-2-Clause, BSD-3-Clause, MIT, ISC, Apache-2.0"
 
     - name: build
       run: go build
 
     - name: License check against the Go binary
-      run: lian --allowed="BSD-2-Clause, BSD-3-Clause, MIT" ./lian
+      run: lian --allowed="BSD-2-Clause, BSD-3-Clause, MIT, ISC, Apache-2.0" ./lian
