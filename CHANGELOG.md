@@ -1,5 +1,9 @@
 # Changelog - lian
 
+## 1.1.0 - 16 August 2025
+
+- feat: add support for replace directives in go.mod files
+
 ## 1.0.0 - 11 February 2025
 
 This release primarily updates dependencies to their latest available versions that support Go 1.18.

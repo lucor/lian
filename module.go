@@ -15,6 +15,8 @@ import (
 type moduleInfo struct {
 	Module  module.Version
 	Require []module.Version
+	// OriginalPaths maps replacement module paths to their original paths
+	OriginalPaths map[string]string
 }
 
 // getModuleInfo extracts the module info from a go.mod or Go binary file
@@ -47,7 +49,18 @@ func getModuleInfo(path string) (moduleInfo, error) {
 			Module: mf.Module.Mod,
 		}
 
+		// Build a map of replacements for quick lookup
+		replacements := make(map[string]module.Version)
+		for _, r := range mf.Replace {
+			replacements[r.Old.Path] = r.New
+		}
+
 		for _, v := range mf.Require {
+			// Use replacement if it exists
+			if replacement, ok := replacements[v.Mod.Path]; ok {
+				mi.Require = append(mi.Require, replacement)
+				continue
+			}
 			mi.Require = append(mi.Require, v.Mod)
 		}
 		return mi, nil
